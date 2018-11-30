@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
-source "${0%/*}/../share/chruby/chruby.sh"
+chruby_sh="${0%/*}/../share/chruby/chruby.sh"
+source "$chruby_sh"
 
 case "$1" in
 	-h|--help)
@@ -33,8 +34,12 @@ if (( $# == 0 )); then
 	exit 1
 fi
 
-command="chruby $(printf "%q " "${argv[@]}") && $(printf "%q " "$@")"
+shell_opts=("-l")
+[[ -t 0 ]] && shell_opts+=("-i")
 
-if [[ -t 0 ]]; then exec "$SHELL" -i -l -c "$command"
-else                exec "$SHELL"    -l -c "$command"
-fi
+source_command="command -v chruby >/dev/null || source $chruby_sh"
+chruby_command="chruby $(printf "%q " "${argv[@]}")"
+sub_command="$(printf "%q " "$@")"
+command="$source_command; $chruby_command && exec $sub_command"
+
+exec "$SHELL" "${shell_opts[@]}" -c "$command"
